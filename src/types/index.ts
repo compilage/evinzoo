@@ -7,7 +7,8 @@ export type PageRoute =
   | 'account'
   | 'login'
   | 'signup'
-  | 'apply-provider';
+  | 'apply-provider'
+  | 'notifications';
 
 export type UserRole = 'client' | 'provider';
 

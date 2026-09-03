@@ -63,7 +63,7 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-surface-container-lowest rounded-3xl max-w-lg w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-modal-pop">
         <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface">
           <div>
             <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">

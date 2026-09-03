@@ -168,7 +168,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             ))}
           </div>
 
-          {/* Revenue Weekly Chart (Stitch Screen 7fe8ca7f) */}
+          {/* Revenue Weekly Chart */}
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>

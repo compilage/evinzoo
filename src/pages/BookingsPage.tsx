@@ -73,7 +73,7 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({
           )}
         </div>
 
-        {/* Filter Pills (Exact from Stitch Screen cb044b63) */}
+        {/* Filter Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <button
             onClick={() => setSelectedStatus('All')}

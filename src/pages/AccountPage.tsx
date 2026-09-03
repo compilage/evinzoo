@@ -372,7 +372,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
           >
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-base">logout</span>
-              <span className="font-bold">Sign Out from EventLogix</span>
+              <span className="font-bold">Sign Out from Evinzoo</span>
             </div>
             <span className="material-symbols-outlined text-sm">chevron_right</span>
           </button>

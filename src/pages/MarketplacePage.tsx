@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageRoute, Provider, Service } from '../types';
 
 interface MarketplacePageProps {
@@ -13,6 +13,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const categories = [
     { id: 'All', label: 'All Services', icon: 'apps' },
@@ -21,6 +22,15 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
     { id: 'Staging & AV', label: 'Staging & AV', icon: 'speaker' },
     { id: 'Security', label: 'Security', icon: 'security' },
   ];
+
+  // Trigger smooth loading state on filter/search change
+  useEffect(() => {
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      setIsSearching(false);
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, searchQuery]);
 
   const filteredProviders = providers.filter((p) => {
     const matchesCategory =
@@ -40,11 +50,11 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
           Find Event Services
         </h1>
         <p className="font-body-sm text-sm md:text-base text-secondary mb-6">
-          Source top-tier logistics, catering, staging, and executive transport professionals.
+          Source top-tier logistics, catering, staging, and executive transport professionals on Evinzoo.
         </p>
 
         {/* Search Bar */}
-        <div className="bg-surface-container-lowest p-2 border border-outline-variant flex items-center shadow-sm rounded-2xl mb-6 max-w-2xl">
+        <div className="bg-surface-container-lowest p-2 border border-outline-variant flex items-center shadow-sm rounded-2xl mb-6 max-w-2xl focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <span className="material-symbols-outlined text-secondary ml-2 mr-2">search</span>
           <input
             className="flex-grow bg-transparent border-none focus:outline-none font-body-sm text-sm text-on-surface placeholder:text-secondary"
@@ -56,14 +66,14 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="text-secondary hover:text-primary mr-2"
+              className="text-secondary hover:text-primary mr-2 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">close</span>
             </button>
           )}
-          <button className="bg-primary text-on-primary w-10 h-10 rounded-xl flex items-center justify-center active:opacity-80 transition-opacity shadow-sm">
+          <div className="bg-primary text-on-primary w-10 h-10 rounded-xl flex items-center justify-center shadow-sm">
             <span className="material-symbols-outlined text-[18px]">tune</span>
-          </button>
+          </div>
         </div>
 
         {/* Category Filter Pills */}
@@ -74,7 +84,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 border ${
                 selectedCategory === cat.id
-                  ? 'bg-primary text-on-primary border-primary shadow-sm'
+                  ? 'bg-primary text-on-primary border-primary shadow-sm scale-[1.02]'
                   : 'bg-surface-container-lowest text-secondary border-outline-variant hover:bg-surface-container hover:text-primary'
               }`}
             >
@@ -88,35 +98,64 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
       {/* Featured Listings Feed */}
       <section className="mb-12">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="font-title-md text-lg font-bold text-primary">
-            Available Verified Providers ({filteredProviders.length})
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-title-md text-lg font-bold text-primary">
+              Available Verified Providers ({isSearching ? '...' : filteredProviders.length})
+            </h2>
+            {isSearching && (
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>
+            )}
+          </div>
           <span className="text-xs text-secondary">
             Showing results for <strong>{selectedCategory}</strong>
           </span>
         </div>
 
-        {filteredProviders.length === 0 ? (
+        {/* Loading Skeleton State */}
+        {isSearching ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+            {[1, 2, 3, 4].map((n) => (
+              <div
+                key={n}
+                className="bg-surface-container-lowest rounded-3xl border border-outline-variant overflow-hidden shadow-sm"
+              >
+                <div className="w-full h-56 animate-shimmer"></div>
+                <div className="p-5 space-y-3">
+                  <div className="flex justify-between">
+                    <div className="h-5 w-40 rounded-lg animate-shimmer"></div>
+                    <div className="h-5 w-12 rounded-lg animate-shimmer"></div>
+                  </div>
+                  <div className="h-3.5 w-full rounded animate-shimmer"></div>
+                  <div className="h-3.5 w-3/4 rounded animate-shimmer"></div>
+                  <div className="border-t border-outline-variant pt-3 flex justify-between items-center">
+                    <div className="h-6 w-24 rounded-lg animate-shimmer"></div>
+                    <div className="h-8 w-24 rounded-xl animate-shimmer"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredProviders.length === 0 ? (
           <div className="text-center py-16 bg-surface-container-lowest rounded-3xl border border-outline-variant p-8">
             <span className="material-symbols-outlined text-4xl text-secondary mb-2">search_off</span>
             <p className="font-title-md text-base font-semibold text-primary">No providers found</p>
-            <p className="text-xs text-secondary mt-1">Try relaxing your search terms or filter.</p>
+            <p className="text-xs text-secondary mt-1">Try relaxing your search terms or category filter.</p>
             <button
               onClick={() => {
                 setSelectedCategory('All');
                 setSearchQuery('');
               }}
-              className="mt-4 px-4 py-2 bg-surface-container rounded-xl text-xs font-bold text-primary hover:bg-surface-container-high"
+              className="mt-4 px-4 py-2 bg-surface-container rounded-xl text-xs font-bold text-primary hover:bg-surface-container-high transition-colors"
             >
               Reset Filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 page-transition">
             {filteredProviders.map((provider) => (
               <div
                 key={provider.id}
-                className="bg-surface-container-lowest rounded-3xl border border-outline-variant overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group"
+                className="bg-surface-container-lowest rounded-3xl border border-outline-variant overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group"
               >
                 {/* Image */}
                 <div className="w-full h-56 bg-surface-variant relative overflow-hidden">
@@ -125,7 +164,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                     src={provider.image}
                   />
-                  <div className="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur rounded-full px-3 py-1 flex items-center gap-1.5 border border-outline-variant">
+                  <div className="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur rounded-full px-3 py-1 flex items-center gap-1.5 border border-outline-variant shadow-sm">
                     <span className="material-symbols-outlined text-[14px] text-tertiary-container filled">
                       check_circle
                     </span>
@@ -142,7 +181,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-title-md text-lg font-bold text-primary">
+                      <h3 className="font-title-md text-lg font-bold text-primary group-hover:text-primary/90 transition-colors">
                         {provider.name}
                       </h3>
                       <div className="flex items-center gap-1 bg-surface px-2 py-0.5 rounded-lg border border-outline-variant">
@@ -188,7 +227,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
                             rating: provider.rating,
                           });
                         }}
-                        className="bg-primary text-on-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-container active:scale-95 transition-all shadow-sm flex items-center gap-1"
+                        className="bg-primary text-on-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-container active:scale-95 transition-all shadow-sm flex items-center gap-1 hover:shadow-md"
                       >
                         <span className="material-symbols-outlined text-[16px]">add_circle</span>
                         <span>Book Now</span>

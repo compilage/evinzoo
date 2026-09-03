@@ -1,13 +1,13 @@
 import { ProviderApplication, User } from '../types';
 
-const STORAGE_KEY_ACCOUNTS = 'eventlogix_registered_accounts';
-const STORAGE_KEY_SESSION = 'eventlogix_current_session';
+const STORAGE_KEY_ACCOUNTS = 'evinzoo_registered_accounts';
+const STORAGE_KEY_SESSION = 'evinzoo_current_session';
 
 const INITIAL_ACCOUNTS: User[] = [
   {
     id: 'user-consumer-1',
     name: 'Alex Rivera',
-    email: 'client@eventlogix.com',
+    email: 'client@evinzoo.com',
     password: 'password123',
     role: 'client',
     isLive: false,
@@ -38,7 +38,7 @@ const INITIAL_ACCOUNTS: User[] = [
 
 export const authService = {
   getAccounts(): User[] {
-    const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
+    const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS) || localStorage.getItem('eventlogix_registered_accounts');
     if (!raw) {
       localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(INITIAL_ACCOUNTS));
       return INITIAL_ACCOUNTS;
@@ -56,7 +56,7 @@ export const authService = {
   },
 
   getCurrentUser(): User | null {
-    const raw = localStorage.getItem(STORAGE_KEY_SESSION);
+    const raw = localStorage.getItem(STORAGE_KEY_SESSION) || localStorage.getItem('eventlogix_current_session');
     if (!raw) {
       // Default to initial provider so user can immediately experience the app, or null
       return null;

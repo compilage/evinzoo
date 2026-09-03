@@ -178,15 +178,15 @@ export const INITIAL_ACTIVITIES: Activity[] = [
 
 // LocalStorage helpers
 const STORAGE_KEYS = {
-  SERVICES: 'eventlogix_services',
-  BOOKINGS: 'eventlogix_bookings',
-  USER: 'eventlogix_user',
-  PROVIDERS: 'eventlogix_providers'
+  SERVICES: 'evinzoo_services',
+  BOOKINGS: 'evinzoo_bookings',
+  USER: 'evinzoo_user',
+  PROVIDERS: 'evinzoo_providers'
 };
 
 export const storage = {
   getServices(): Service[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.SERVICES);
+    const raw = localStorage.getItem(STORAGE_KEYS.SERVICES) || localStorage.getItem('eventlogix_services');
     if (!raw) {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(INITIAL_SERVICES));
       return INITIAL_SERVICES;
@@ -202,7 +202,7 @@ export const storage = {
   },
 
   getBookings(): Booking[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+    const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS) || localStorage.getItem('eventlogix_bookings');
     if (!raw) {
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(INITIAL_BOOKINGS));
       return INITIAL_BOOKINGS;

@@ -16,11 +16,11 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentRoute }) => {
                 <span className="material-symbols-outlined text-[18px]">event</span>
               </div>
               <span className="font-display-lg text-2xl font-bold text-primary">
-                EventLogix
+                Evinzoo
               </span>
             </div>
             <p className="font-body-sm text-sm text-secondary max-w-md leading-relaxed">
-              EventLogix is the premier marketplace and logistics operating system for high-end event service providers. We connect professional planners with top-tier catering, transport, and staging to ensure seamless execution.
+              Evinzoo is the premier marketplace and logistics operating system for high-end event service providers. We connect professional planners with top-tier catering, transport, and staging to ensure seamless execution.
             </p>
           </div>
 
@@ -83,7 +83,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentRoute }) => {
 
         <div className="border-t border-outline-variant pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="font-mono-data text-xs text-secondary">
-            © 2024 EventLogix Logistics Ltd. All rights reserved.
+            © 2026 Evinzoo Logistics Platform. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-secondary">
             <span className="material-symbols-outlined text-[20px] cursor-pointer hover:text-primary transition-colors">

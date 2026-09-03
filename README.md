@@ -1,105 +1,50 @@
-# EventLogix (evinzoo)
+# Evinzoo
 
-> **Event Service & Logistics Management Web Application**  
-> Converted from Stitch Project ID: `692636071627324383` (Event Service Manager / Executive Logistics)
-
----
-
-## 🚀 Overview
-
-**EventLogix** is a high-end corporate event service and logistics booking platform built with **React**, **Vite**, **TypeScript**, and **Tailwind CSS**. It connects enterprise event planners with premier catering, executive ground transportation, concert-grade staging & AV, and professional event security providers.
+> **Premier Event Logistics & Service Management Platform**
 
 ---
 
-## 📱 Features & Screens Implemented
+## 🌟 Overview
 
-1. **Landing Page (`LandingPage.tsx`)**:
-   - High-impact search hero for services and locations.
-   - High-demand category pills (*Catering*, *Transport*, *Staging & AV*, *Security*).
-   - Staggered featured providers with rating badges, starting prices, and instant reservation modal.
-   - Provider recruitment CTA and corporate footer.
-
-2. **Marketplace / Service Discovery (`MarketplacePage.tsx`)**:
-   - Filterable provider listings by category and search keyword.
-   - Availability and verification indicators.
-   - Instant booking flow.
-
-3. **Provider Dashboard (`DashboardPage.tsx`)**:
-   - Executive metrics: Gross Revenue (\$12.4k+), Total Bookings (184), Views (1.2k) with trend percentages.
-   - Upcoming Bookings queue with quick status actions (Accept, Decline).
-   - Weekly Earnings interactive overview chart.
-   - Recent Activity feed.
-
-4. **Booking Management (`BookingsPage.tsx`)**:
-   - Multi-status tabbed filter: *All*, *Pending*, *Confirmed*, *In-Progress*.
-   - Search bookings by client name or reference code.
-   - Contract value display, scheduled date, and logistics notes.
-   - Interactive Invoice modal with simulated receipt download.
-
-5. **Service Catalog (`ServiceCatalogPage.tsx`)**:
-   - Manage public service packages with pricing, billing units, and descriptions.
-   - Clickable *Active* / *Draft* status toggles.
-   - Edit package modal and floating action button (FAB) for adding new packages.
-
-6. **Account & Operations Hub (`AccountPage.tsx`)**:
-   - Provider identity header (*Elite Events Co.*, ID: 8842) with live marketplace toggle switch.
-   - Profile management for administrator *Sarah Jenkins*.
-   - Operations shortcuts (*Service Catalog*, *Bookings Queue*, *Earnings & Analytics*, *Staff Roster*, *Equipment Stock*, *Preferences*).
-   - Sign out and role toggle.
-
-7. **Authentication Flow (`LoginPage.tsx` & `SignupPage.tsx`)**:
-   - Modern transactional login and sign-up pages.
-   - One-click Google OAuth demo authentication.
-   - Dummy login and signup that persist state to `localStorage`.
-
-8. **Dual View Experience (Desktop & Mobile Simulation)**:
-   - Fluid desktop responsive layout with navigation bar and footer.
-   - **Mobile View (390px)** toggle in the top bar to preview the exact mobile viewport designed in Stitch.
+**Evinzoo** is an enterprise-grade digital logistics and event services marketplace. The platform bridges high-profile corporate event organizers, gala coordinators, and private planners with verified, top-tier service providers across specialized domains including gourmet catering, VIP ground transit, concert-grade staging & audiovisuals, and tactical event security.
 
 ---
 
-## 🛠️ Technology Stack
+## 🏛️ Platform Architecture
 
-- **Framework**: [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Bundler & Dev Server**: [Vite](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with Stitch *Executive Logistics* design tokens (Deep Navy `#0f172a`, Emerald Green `#10b981`, Slate `#505f76`, and clean surface layers).
-- **Typography & Icons**: Google Fonts ([Inter](https://fonts.google.com/specimen/Inter)) & [Material Symbols Outlined](https://fonts.google.com/icons).
-- **Persistence**: Browser `localStorage` with initial mock data.
+Evinzoo is architected with two strictly decoupled operational portals:
+
+### 1. Consumer Experience
+- **Service Discovery & Exploration**: Instant category-based search with real-time availability filters.
+- **Verified Provider Catalog**: Transparent pricing structures, fleet and equipment inspection, and client reviews.
+- **Reservation & Booking Workflow**: Streamlined booking submission with status notifications (*Pending*, *Confirmed*, *In-Progress*).
+- **Activity & Alerts**: Real-time event logistics alerts, calendar confirmations, and payment tracking.
+
+### 2. Business Owner & Partner Hub
+- **Provider Operations Dashboard**: Real-time dispatch telemetry, active booking volume, and catalog view metrics.
+- **Booking Management Queue**: Intake for incoming requests with instant confirmation or scheduling adjustments.
+- **Dynamic Service Catalog**: Live controls for service offerings, pricing units, and temporary availability toggles.
+- **Partner Compliance & Profile**: Commercial licensing status, operating cities, and live marketplace availability.
 
 ---
 
-## 💻 Getting Started
+## 🛡️ Security & Authentication
 
-### Prerequisites
-- Node.js (v18+)
-- npm
+- Dedicated isolated authentication interface.
+- Distinct consumer vs. business partner authorization gateways.
+- Localized secure session state and credential management.
 
-### Installation & Running Locally
+---
 
-1. Open a terminal in the project directory:
-   ```bash
-   cd "d:\Abhi Dev Projects\Web Projects\evinzoo"
-   ```
+## ⚖️ Proprietary & Copyright Notice
 
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
-   *(On Windows PowerShell with script restriction, run: `npm.cmd run dev`)*
+**Copyright © 2026 Compilage. All rights reserved.**
 
-3. Open your browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
+This repository contains proprietary and confidential source code, assets, and documentation owned by **Compilage**. 
 
-### Production Build
+This repository is publicly accessible for viewing, evaluation, and review purposes only. Public access does **not** grant any license or right to copy, reproduce, modify, redistribute, sublicense, or commercially exploit any part of this software without prior written permission from Compilage.
 
-To compile a production bundle:
-```bash
-npm.cmd run build
-```
+For full legal terms and conditions, please consult [`COPYRIGHT.md`](./COPYRIGHT.md).
 
-To preview the production build locally:
-```bash
-npm.cmd run preview
-```
+For permission inquiries, contact:
+- **Compilage**: `compilage.dev@gmail.com`

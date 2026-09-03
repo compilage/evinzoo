@@ -16,7 +16,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-surface-container-lowest w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="bg-surface-container-lowest w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-modal-pop">
         {/* Header */}
         <div className="px-5 py-4 border-b border-outline-variant flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2">

@@ -37,7 +37,7 @@ export const ProviderApplicationPage: React.FC<ProviderApplicationPageProps> = (
           Sign In to Apply as a Provider
         </h1>
         <p className="text-sm text-secondary mb-8 max-w-md mx-auto leading-relaxed">
-          To maintain network quality and verified logistics standards, all providers must first have an active EventLogix consumer account before submitting their business verification application.
+          To maintain network quality and verified logistics standards, all providers must first have an active Evinzoo consumer account before submitting their business verification application.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -72,7 +72,7 @@ export const ProviderApplicationPage: React.FC<ProviderApplicationPageProps> = (
           You are an Approved Partner
         </h1>
         <p className="text-sm text-secondary mb-6 max-w-md mx-auto">
-          Your business <strong>{user.companyName}</strong> (Provider ID: {user.providerId}) is actively registered on the EventLogix network.
+          Your business <strong>{user.companyName}</strong> (Provider ID: {user.providerId}) is actively registered on the Evinzoo network.
         </p>
 
         <div className="flex justify-center gap-3">
@@ -107,7 +107,7 @@ export const ProviderApplicationPage: React.FC<ProviderApplicationPageProps> = (
       return;
     }
     if (!agreed) {
-      setError('You must agree to the EventLogix Provider Quality & Compliance standards.');
+      setError('You must agree to the Evinzoo Provider Quality & Compliance standards.');
       return;
     }
 
@@ -162,7 +162,7 @@ export const ProviderApplicationPage: React.FC<ProviderApplicationPageProps> = (
           Apply to Become a Verified Service Provider
         </h1>
         <p className="text-xs sm:text-sm text-secondary max-w-lg mx-auto leading-relaxed">
-          Provide your business credentials to list your service fleet or packages, receive direct client bookings, and manage contracts on EventLogix.
+          Provide your business credentials to list your service fleet or packages, receive direct client bookings, and manage contracts on Evinzoo.
         </p>
       </div>
 
@@ -288,7 +288,7 @@ export const ProviderApplicationPage: React.FC<ProviderApplicationPageProps> = (
                 className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary mt-0.5"
               />
               <span className="leading-relaxed">
-                I certify that our business holds valid commercial liability insurance and all relevant municipal licenses. I agree to uphold EventLogix service level standards.
+                I certify that our business holds valid commercial liability insurance and all relevant municipal licenses. I agree to uphold Evinzoo service level standards.
               </span>
             </label>
           </div>

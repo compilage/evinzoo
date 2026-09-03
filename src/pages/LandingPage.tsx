@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { PageRoute, Provider, Service } from '../types';
+import { PageRoute, Provider, Service, User } from '../types';
 
 interface LandingPageProps {
+  user: User | null;
   setCurrentRoute: (route: PageRoute) => void;
   providers: Provider[];
   onSelectServiceToBook: (service: Service) => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
+  user,
   setCurrentRoute,
   providers,
   onSelectServiceToBook,
@@ -116,7 +118,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Featured Providers Staggered Cards (Exact layout from Stitch) */}
+      {/* Featured Providers Staggered Cards */}
       <section className="px-margin-mobile py-stack-md mb-stack-lg">
         <div className="flex justify-between items-end mb-stack-md md:mb-12">
           <div>
@@ -201,7 +203,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                     <button
                       onClick={() => {
-                        onSelectServiceToBook({
+                        const serviceItem: Service = {
                           id: provider.id,
                           title: provider.name,
                           description: provider.description,
@@ -211,7 +213,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           image: provider.image,
                           status: 'Active',
                           rating: provider.rating,
-                        });
+                        };
+                        onSelectServiceToBook(serviceItem);
+                        if (!user) {
+                          setCurrentRoute('login');
+                        }
                       }}
                       className="bg-primary text-on-primary rounded-xl px-5 py-2.5 font-label-bold text-xs font-bold hover:bg-primary-container transition-colors active:scale-95 shadow-sm flex items-center gap-1.5"
                     >

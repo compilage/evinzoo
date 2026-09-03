@@ -56,7 +56,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({
           onClick={() => setCurrentRoute('landing')}
           className="font-headline-lg text-2xl tracking-tight font-bold text-primary mb-2 cursor-pointer inline-block"
         >
-          EVENTLOGIX
+          EVINZOO
         </div>
         <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
           <span className="material-symbols-outlined text-[20px]">person_add</span>
@@ -65,7 +65,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({
           Create Consumer Account
         </h1>
         <p className="text-xs text-secondary">
-          Join EventLogix to discover, reserve, and manage top-tier event services.
+          Join Evinzoo to discover, reserve, and manage top-tier event services.
         </p>
       </div>
 

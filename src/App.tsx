@@ -16,7 +16,7 @@ import { BookingsPage } from './pages/BookingsPage';
 import { ServiceCatalogPage } from './pages/ServiceCatalogPage';
 import { AccountPage } from './pages/AccountPage';
 import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { ProviderApplicationPage } from './pages/ProviderApplicationPage';
 import { BookingModal } from './components/modals/BookingModal';
 import { AddServiceModal } from './components/modals/AddServiceModal';
@@ -59,17 +59,14 @@ export function App() {
   // Auth actions
   const handleLogin = (newUser: User) => {
     setUser(newUser);
-    showToast(`Welcome back, ${newUser.name}!`);
-  };
-
-  const handleSignup = (newUser: User) => {
-    setUser(newUser);
-    showToast(`Welcome to EventLogix, ${newUser.name}! You are registered as an Event Planner.`);
+    showToast(`Welcome, ${newUser.name}!`);
+    // If user was attempting to book a service, keeping serviceToBook will open the booking dialog
   };
 
   const handleLogout = () => {
     authService.logout();
     setUser(null);
+    setServiceToBook(null);
     showToast('Signed out successfully.');
     setCurrentRoute('landing');
   };
@@ -89,7 +86,6 @@ export function App() {
       setCurrentRoute('apply-provider');
       return;
     }
-    // For providers, allow toggling view perspective between provider dashboard and marketplace
     const newRole: UserRole = user.role === 'provider' ? 'client' : 'provider';
     const updated: User = { ...user, role: newRole };
     authService.updateUser(updated);
@@ -98,7 +94,7 @@ export function App() {
     if (newRole === 'provider') {
       setCurrentRoute('dashboard');
     } else {
-      setCurrentRoute('marketplace');
+      setCurrentRoute('landing');
     }
   };
 
@@ -210,6 +206,7 @@ export function App() {
       case 'landing':
         return (
           <LandingPage
+            user={user}
             setCurrentRoute={setCurrentRoute}
             providers={providers}
             onSelectServiceToBook={(srv) => setServiceToBook(srv)}
@@ -220,7 +217,14 @@ export function App() {
           <MarketplacePage
             setCurrentRoute={setCurrentRoute}
             providers={providers}
-            onSelectServiceToBook={(srv) => setServiceToBook(srv)}
+            onSelectServiceToBook={(srv) => {
+              if (!user) {
+                setServiceToBook(srv);
+                setCurrentRoute('login');
+              } else {
+                setServiceToBook(srv);
+              }
+            }}
           />
         );
       case 'dashboard':
@@ -256,6 +260,14 @@ export function App() {
             onDeleteService={handleDeleteService}
           />
         );
+      case 'notifications':
+        return (
+          <NotificationsPage
+            user={user}
+            setCurrentRoute={setCurrentRoute}
+            activities={activities}
+          />
+        );
       case 'apply-provider':
         return (
           <ProviderApplicationPage
@@ -274,22 +286,18 @@ export function App() {
           />
         );
       case 'login':
+      case 'signup':
         return (
           <LoginPage
             setCurrentRoute={setCurrentRoute}
             onLoginSuccess={handleLogin}
-          />
-        );
-      case 'signup':
-        return (
-          <SignupPage
-            setCurrentRoute={setCurrentRoute}
-            onSignupSuccess={handleSignup}
+            hasPendingBooking={Boolean(serviceToBook)}
           />
         );
       default:
         return (
           <LandingPage
+            user={user}
             setCurrentRoute={setCurrentRoute}
             providers={providers}
             onSelectServiceToBook={(srv) => setServiceToBook(srv)}
@@ -297,6 +305,8 @@ export function App() {
         );
     }
   };
+
+  const isAuthPage = currentRoute === 'login' || currentRoute === 'signup';
 
   return (
     <div className="flex flex-col min-h-screen bg-surface text-on-surface">
@@ -310,46 +320,49 @@ export function App() {
         </div>
       )}
 
-      {/* Main Navbar */}
-      <Navbar
-        currentRoute={currentRoute}
-        setCurrentRoute={setCurrentRoute}
-        user={user}
-        onLogout={handleLogout}
-        onToggleRole={handleToggleRole}
-      />
+      {/* Main Navbar - Hidden on dedicated Auth page */}
+      {!isAuthPage && (
+        <Navbar
+          currentRoute={currentRoute}
+          setCurrentRoute={setCurrentRoute}
+          user={user}
+          onLogout={handleLogout}
+          onToggleRole={handleToggleRole}
+        />
+      )}
 
-      {/* Page Content */}
-      <div className="flex-1">{renderPage()}</div>
+      {/* Page Content with smooth transition */}
+      <div key={currentRoute} className="flex-1 page-transition">{renderPage()}</div>
 
       {/* Footer - Placed strategically on Landing Page only */}
-      {currentRoute === 'landing' && (
+      {!isAuthPage && currentRoute === 'landing' && (
         <Footer setCurrentRoute={setCurrentRoute} />
       )}
 
-      {/* Mobile Bottom Navigation - Only visible when logged in */}
+      {/* Persistent Bottom Navigation for Logged-In Portals */}
       <MobileNav
         currentRoute={currentRoute}
         setCurrentRoute={setCurrentRoute}
         user={user}
-        onOpenNotifications={() => setIsNotificationsOpen(true)}
         unreadNotificationsCount={activities.length}
       />
 
-      {/* Partner Notifications Modal */}
+      {/* Partner Notifications Modal (Quick Drawer) */}
       <NotificationsModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
         activities={activities}
       />
 
-      {/* Booking Modal */}
-      <BookingModal
-        isOpen={Boolean(serviceToBook)}
-        service={serviceToBook}
-        onClose={() => setServiceToBook(null)}
-        onConfirmBooking={handleConfirmBooking}
-      />
+      {/* Booking Modal - Only displayed for logged-in users with a selected service */}
+      {user && (
+        <BookingModal
+          isOpen={Boolean(serviceToBook)}
+          service={serviceToBook}
+          onClose={() => setServiceToBook(null)}
+          onConfirmBooking={handleConfirmBooking}
+        />
+      )}
 
       {/* Add / Edit Service Modal */}
       <AddServiceModal
