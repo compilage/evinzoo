@@ -98,7 +98,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-surface border border-outline-variant rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="e.g. Apex Global or Sarah Jenkins"
+              placeholder="e.g. Apex Global or Jane Doe"
             />
           </div>
 

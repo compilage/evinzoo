@@ -1,15 +1,4 @@
-import { Booking, Service, Provider, Activity, User } from '../types';
-
-export const INITIAL_USER: User = {
-  id: 'user-provider-1',
-  name: 'Sarah Jenkins',
-  email: 'sarah.jenkins@eliteevents.com',
-  role: 'provider',
-  companyName: 'Elite Events Co.',
-  providerId: '8842',
-  isLive: true,
-  avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtlxnZgm7Z1lflDZVDkOKW9n1QJCcEt5715Ny_GRutOl6KDaUIE4V7FLAJatybLk8snhqSE9-3blgzKISuAFPqiBXdOEQrmIivTZNNfNtA0N8pL1vcIbUMZUrIGk1z_Y9qBDricivwS2fTE6RGftsxdcjJWHwq7hIfLd03LPG6mHTwlm-OoLXeLksg2Z1JChLWUuUPNoOcdyX1LP4ouqwwrtBHdEjgOmpZ_YawqqMBJllnL0xzzVQ'
-};
+import { Booking, Service, Provider, Activity } from '../types';
 
 export const INITIAL_PROVIDERS: Provider[] = [
   {
@@ -180,13 +169,13 @@ export const INITIAL_ACTIVITIES: Activity[] = [
 const STORAGE_KEYS = {
   SERVICES: 'evinzoo_services',
   BOOKINGS: 'evinzoo_bookings',
-  USER: 'evinzoo_user',
   PROVIDERS: 'evinzoo_providers'
 };
 
 export const storage = {
   getServices(): Service[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.SERVICES) || localStorage.getItem('eventlogix_services');
+    localStorage.removeItem('eventlogix_services');
+    const raw = localStorage.getItem(STORAGE_KEYS.SERVICES);
     if (!raw) {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(INITIAL_SERVICES));
       return INITIAL_SERVICES;
@@ -202,7 +191,8 @@ export const storage = {
   },
 
   getBookings(): Booking[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS) || localStorage.getItem('eventlogix_bookings');
+    localStorage.removeItem('eventlogix_bookings');
+    const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
     if (!raw) {
       localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(INITIAL_BOOKINGS));
       return INITIAL_BOOKINGS;
@@ -215,21 +205,5 @@ export const storage = {
   },
   saveBookings(bookings: Booking[]) {
     localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
-  },
-
-  getUser(): User {
-    const raw = localStorage.getItem(STORAGE_KEYS.USER);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(INITIAL_USER));
-      return INITIAL_USER;
-    }
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return INITIAL_USER;
-    }
-  },
-  saveUser(user: User) {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   }
 };

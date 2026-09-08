@@ -19,7 +19,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -39,10 +39,10 @@ export const SignupPage: React.FC<SignupPageProps> = ({
     setLoading(true);
 
     try {
-      const user = authService.signup(name, email, password);
+      const user = await authService.signup(name, email, password);
       onSignupSuccess(user);
       setLoading(false);
-      setCurrentRoute('marketplace');
+      setCurrentRoute('landing');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
       setLoading(false);
@@ -62,7 +62,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({
           <span className="material-symbols-outlined text-[20px]">person_add</span>
         </div>
         <h1 className="font-headline-lg text-2xl font-bold text-primary mb-1">
-          Create Consumer Account
+          Create an Account
         </h1>
         <p className="text-xs text-secondary">
           Join Evinzoo to discover, reserve, and manage top-tier event services.
@@ -165,7 +165,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({
           <p className="text-[11px] text-secondary">
             Looking to list your catering, fleet, or staging service?{' '}
             <span className="text-primary font-bold">
-              Sign up as a consumer first, then click "Become a Provider" to apply.
+              Sign up first, then click "Become a Provider" to apply.
             </span>
           </p>
         </div>

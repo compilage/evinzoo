@@ -29,9 +29,11 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
             <h1 className="font-headline-lg-mobile md:font-headline-lg text-2xl md:text-3xl font-bold text-primary">
               {isProvider ? 'Business Notifications' : 'Activity & Alerts'}
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
-              {isProvider ? 'Partner Hub' : 'Consumer'}
-            </span>
+            {isProvider && (
+              <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+                Partner Hub
+              </span>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-secondary mt-1">
             {isProvider

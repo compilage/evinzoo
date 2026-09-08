@@ -1,46 +1,50 @@
-import { ProviderApplication, User } from '../types';
+import { ProviderApplication, User, UserRole } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const STORAGE_KEY_ACCOUNTS = 'evinzoo_registered_accounts';
 const STORAGE_KEY_SESSION = 'evinzoo_current_session';
 
-const INITIAL_ACCOUNTS: User[] = [
-  {
-    id: 'user-consumer-1',
-    name: 'Alex Rivera',
-    email: 'client@evinzoo.com',
-    password: 'password123',
-    role: 'client',
-    isLive: false,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
-  },
-  {
-    id: 'user-provider-1',
-    name: 'Sarah Jenkins',
-    email: 'sarah@eliteevents.com',
-    password: 'password123',
-    role: 'provider',
-    companyName: 'Elite Events Co.',
-    providerId: '8842',
-    isLive: true,
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtlxnZgm7Z1lflDZVDkOKW9n1QJCcEt5715Ny_GRutOl6KDaUIE4V7FLAJatybLk8snhqSE9-3blgzKISuAFPqiBXdOEQrmIivTZNNfNtA0N8pL1vcIbUMZUrIGk1z_Y9qBDricivwS2fTE6RGftsxdcjJWHwq7hIfLd03LPG6mHTwlm-OoLXeLksg2Z1JChLWUuUPNoOcdyX1LP4ouqwwrtBHdEjgOmpZ_YawqqMBJllnL0xzzVQ',
-    providerApplication: {
-      businessName: 'Elite Events Co.',
-      category: 'Catering',
-      city: 'San Francisco, CA',
-      phone: '+1 (415) 555-0192',
-      description: 'Full-scale enterprise catering and VIP banquet operations.',
-      licenseNumber: 'LIC-CA-884291',
-      status: 'approved',
-      appliedAt: '2024-08-15',
-    },
-  },
-];
+// Real authentication mode: no pre-seeded dummy users
+const INITIAL_ACCOUNTS: User[] = [];
+
+export function mapProfileToUser(profile: any, fallbackEmail?: string, providerDetails?: any): User {
+  const role: UserRole = profile.role === 'provider' ? 'provider' : 'consumer';
+  return {
+    id: profile.id,
+    userId: profile.user_id,
+    name: profile.full_name || profile.name || 'Evinzoo Member',
+    email: profile.email || fallbackEmail || '',
+    phone: profile.phone || providerDetails?.business_phone || undefined,
+    role,
+    avatar:
+      profile.avatar_url ||
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
+    companyName: providerDetails?.business_name || profile.company_name || undefined,
+    providerId: profile.provider_id || (role === 'provider' ? `PRV-${profile.id.slice(0, 6).toUpperCase()}` : undefined),
+    isLive: providerDetails ? Boolean(providerDetails.is_available) : Boolean(profile.is_live),
+    providerDetails: providerDetails
+      ? {
+          profileId: profile.id,
+          businessName: providerDetails.business_name || undefined,
+          businessDescription: providerDetails.business_description || undefined,
+          businessPhone: providerDetails.business_phone || undefined,
+          businessEmail: providerDetails.business_email || undefined,
+          kycStatus: providerDetails.kyc_status || 'verified',
+          serviceability: providerDetails.serviceability || { latitude: 0.0, longitude: 0.0 },
+          isAvailable: Boolean(providerDetails.is_available),
+          createdAt: providerDetails.created_at,
+          updatedAt: providerDetails.updated_at,
+        }
+      : undefined,
+  };
+}
 
 export const authService = {
-  getAccounts(): User[] {
-    const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS) || localStorage.getItem('eventlogix_registered_accounts');
+  // Local storage fallback helpers
+  getMockAccounts(): User[] {
+    localStorage.removeItem('eventlogix_registered_accounts');
+    const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(INITIAL_ACCOUNTS));
       return INITIAL_ACCOUNTS;
     }
     try {
@@ -51,24 +55,34 @@ export const authService = {
     }
   },
 
-  saveAccounts(accounts: User[]) {
+  saveMockAccounts(accounts: User[]) {
     localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(accounts));
   },
 
-  getCurrentUser(): User | null {
-    const raw = localStorage.getItem(STORAGE_KEY_SESSION) || localStorage.getItem('eventlogix_current_session');
-    if (!raw) {
-      // Default to initial provider so user can immediately experience the app, or null
-      return null;
-    }
+  getMockSession(): User | null {
+    localStorage.removeItem('eventlogix_current_session');
+    const raw = localStorage.getItem(STORAGE_KEY_SESSION);
+    if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      const session = JSON.parse(raw);
+      if (
+        !session ||
+        session.email === 'client@evinzoo.com' ||
+        session.name === 'Alex Rivera' ||
+        session.email === 'sarah@eliteevents.com' ||
+        session.name === 'Sarah Jenkins'
+      ) {
+        localStorage.removeItem(STORAGE_KEY_SESSION);
+        return null;
+      }
+      return session;
     } catch {
+      localStorage.removeItem(STORAGE_KEY_SESSION);
       return null;
     }
   },
 
-  setCurrentUser(user: User | null) {
+  setMockSession(user: User | null) {
     if (!user) {
       localStorage.removeItem(STORAGE_KEY_SESSION);
     } else {
@@ -76,60 +90,243 @@ export const authService = {
     }
   },
 
-  signup(name: string, email: string, password: string): User {
+  // 1. Initial Session Retrieval
+  async getCurrentUser(): Promise<User | null> {
+    if (!isSupabaseConfigured) {
+      return this.getMockSession();
+    }
+
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.user) {
+        return null;
+      }
+
+      // Fetch profile from public.profiles
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        // Fallback to user metadata if profile trigger is processing
+        return {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Evinzoo Member',
+          email: session.user.email || '',
+          role: 'consumer',
+          isLive: false,
+          avatar:
+            session.user.user_metadata?.avatar_url ||
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
+        };
+      }
+
+      let providerDetails = null;
+      if (profile.role === 'provider') {
+        const { data: details } = await supabase
+          .from('provider_details')
+          .select('*')
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+        providerDetails = details;
+      }
+
+      return mapProfileToUser(profile, session.user.email, providerDetails);
+    } catch (err) {
+      console.error('[Evinzoo Auth] Failed to fetch current user session:', err);
+      return null;
+    }
+  },
+
+  // 2. Real Registration (All new users register as Consumer)
+  async signup(name: string, email: string, password: string, phone?: string): Promise<User> {
     const normalizedEmail = email.trim().toLowerCase();
     if (!name.trim()) throw new Error('Please enter your full name.');
     if (!normalizedEmail || !normalizedEmail.includes('@')) throw new Error('Please enter a valid email address.');
     if (!password || password.length < 6) throw new Error('Password must be at least 6 characters long.');
 
-    const accounts = this.getAccounts();
-    const existing = accounts.find((u) => u.email.toLowerCase() === normalizedEmail);
-    if (existing) {
-      throw new Error('An account with this email address already exists. Please sign in instead.');
+    if (!isSupabaseConfigured) {
+      const accounts = this.getMockAccounts();
+      const existing = accounts.find((u) => u.email.toLowerCase() === normalizedEmail);
+      if (existing) {
+        throw new Error('An account with this email address already exists. Please sign in instead.');
+      }
+      const newUser: User = {
+        id: `usr-${Date.now()}`,
+        userId: `USR-${Math.floor(100000 + Math.random() * 900000)}`,
+        name: name.trim(),
+        email: normalizedEmail,
+        phone: phone?.trim(),
+        password: password,
+        role: 'consumer',
+        isLive: false,
+        avatar:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
+      };
+      accounts.push(newUser);
+      this.saveMockAccounts(accounts);
+      this.setMockSession(newUser);
+      return newUser;
     }
 
-    const defaultAvatars = [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBOcZgG2JOF2Sxk2Ya_cXByD290B3aFa3bws1iDKAiiBu8OSr59JN7PPEf42XmRt3E8I9LP4OALjqnwwZ8abT7e1Y2oEGp2HbMpTQRAIR0riWM2ua281oTa679CmEhMttfSIB7Ap2eKxhdCy8qVp9CwEZVkhfWampQutjlNxTN64mfkAAubeASN1d4Yb-DyfFvjxbKYrCtvZGAiAFs_cxnSv123f16yAJq3Oh31G-fm6BZVXSdqXBs',
-    ];
-
-    // Every new user ALWAYS starts as a consumer / client
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      name: name.trim(),
+    const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password: password,
-      role: 'client',
-      isLive: false,
-      avatar: defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)],
-    };
+      options: {
+        data: {
+          full_name: name.trim(),
+          phone: phone?.trim() || null,
+          role: 'consumer',
+        },
+      },
+    });
 
-    accounts.push(newUser);
-    this.saveAccounts(accounts);
-    this.setCurrentUser(newUser);
-    return newUser;
-  },
-
-  login(email: string, password: string): User {
-    const normalizedEmail = email.trim().toLowerCase();
-    const accounts = this.getAccounts();
-    const match = accounts.find(
-      (u) => u.email.toLowerCase() === normalizedEmail && u.password === password
-    );
-
-    if (!match) {
-      throw new Error('Invalid email or password. Please verify your credentials.');
+    if (error) {
+      throw new Error(error.message);
     }
 
-    this.setCurrentUser(match);
-    return match;
+    if (!data.user) {
+      throw new Error('Registration failed. Please check your details and try again.');
+    }
+
+    // Try fetching the created profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profile) {
+      return mapProfileToUser(profile, data.user.email);
+    }
+
+    return {
+      id: data.user.id,
+      name: name.trim(),
+      email: normalizedEmail,
+      role: 'consumer',
+      isLive: false,
+      avatar:
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
+    };
   },
 
-  logout() {
-    this.setCurrentUser(null);
+  // 3. Real Login
+  async login(email: string, password: string): Promise<User> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!isSupabaseConfigured) {
+      const accounts = this.getMockAccounts();
+      const match = accounts.find(
+        (u) => u.email.toLowerCase() === normalizedEmail && u.password === password
+      );
+      if (!match) {
+        throw new Error('Invalid email or password. Please verify your credentials.');
+      }
+      this.setMockSession(match);
+      return match;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: password,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data.user) {
+      throw new Error('Login failed. Please verify your credentials.');
+    }
+
+    // Fetch user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return {
+        id: data.user.id,
+        name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Evinzoo Member',
+        email: data.user.email || normalizedEmail,
+        role: 'consumer',
+        isLive: false,
+        avatar:
+          data.user.user_metadata?.avatar_url ||
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
+      };
+    }
+
+    return mapProfileToUser(profile, data.user.email);
   },
 
-  applyToBeProvider(
+  // 4. Real Sign Out
+  async logout(): Promise<void> {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
+    this.setMockSession(null);
+  },
+
+  // 5. Auth State Change Listener
+  onAuthStateChange(callback: (user: User | null) => void) {
+    if (!isSupabaseConfigured) {
+      return { unsubscribe: () => {} };
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session?.user) {
+        callback(null);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile) {
+        let providerDetails = null;
+        if (profile.role === 'provider') {
+          const { data: details } = await supabase
+            .from('provider_details')
+            .select('*')
+            .eq('profile_id', profile.id)
+            .maybeSingle();
+          providerDetails = details;
+        }
+        callback(mapProfileToUser(profile, session.user.email, providerDetails));
+      } else {
+        callback({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Evinzoo Member',
+          email: session.user.email || '',
+          role: 'consumer',
+          isLive: false,
+          avatar:
+            session.user.user_metadata?.avatar_url ||
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
+        });
+      }
+    });
+
+    return {
+      unsubscribe: () => subscription.unsubscribe(),
+    };
+  },
+
+  // 6. Provider Application Mock Transition (Phase 2 will migrate this to provider_applications table)
+  async applyToBeProvider(
     userId: string,
     appData: {
       businessName: string;
@@ -139,20 +336,46 @@ export const authService = {
       description: string;
       licenseNumber: string;
     }
-  ): User {
-    const accounts = this.getAccounts();
-    const idx = accounts.findIndex((u) => u.id === userId);
-    if (idx === -1) throw new Error('User account not found.');
+  ): Promise<User> {
+    if (isSupabaseConfigured) {
+      // In Phase 1, update profile role to provider and store company details
+      const newProviderId = Math.floor(1000 + Math.random() * 9000).toString();
+      const { data: updatedProfile, error } = await supabase
+        .from('profiles')
+        .update({
+          role: 'provider',
+          company_name: appData.businessName,
+          provider_id: newProviderId,
+          is_live: true,
+          phone: appData.phone,
+        })
+        .eq('id', userId)
+        .select()
+        .single();
 
-    const newProviderId = Math.floor(1000 + Math.random() * 9000).toString();
+      if (!error && updatedProfile) {
+        return mapProfileToUser(updatedProfile);
+      }
+    }
+
+    const accounts = this.getMockAccounts();
+    const idx = accounts.findIndex((u) => u.id === userId);
+    const now = new Date().toISOString();
     const providerApp: ProviderApplication = {
-      ...appData,
+      id: `app-${Date.now()}`,
+      profileId: userId,
+      businessName: appData.businessName,
+      businessDescription: appData.description,
+      businessPhone: appData.phone,
+      kycStatus: 'verified',
       status: 'approved',
-      appliedAt: new Date().toISOString().split('T')[0],
+      statusHistory: [{ status: 'approved', timestamp: now }],
+      submittedAt: now,
     };
 
+    const newProviderId = Math.floor(1000 + Math.random() * 9000).toString();
     const updatedUser: User = {
-      ...accounts[idx],
+      ...(idx !== -1 ? accounts[idx] : { id: userId, email: '', name: '', avatar: '' }),
       role: 'provider',
       companyName: appData.businessName,
       providerId: newProviderId,
@@ -160,20 +383,42 @@ export const authService = {
       providerApplication: providerApp,
     };
 
-    accounts[idx] = updatedUser;
-    this.saveAccounts(accounts);
-    this.setCurrentUser(updatedUser);
+    if (idx !== -1) {
+      accounts[idx] = updatedUser;
+      this.saveMockAccounts(accounts);
+    }
+    this.setMockSession(updatedUser);
     return updatedUser;
   },
 
-  updateUser(user: User): User {
-    const accounts = this.getAccounts();
+  // 7. Update User Profile
+  async updateUser(user: User): Promise<User> {
+    if (isSupabaseConfigured) {
+      const { data: updated, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: user.name,
+          phone: user.phone,
+          avatar_url: user.avatar,
+          is_live: user.isLive,
+          company_name: user.companyName,
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (!error && updated) {
+        return mapProfileToUser(updated, user.email);
+      }
+    }
+
+    const accounts = this.getMockAccounts();
     const idx = accounts.findIndex((u) => u.id === user.id);
     if (idx !== -1) {
       accounts[idx] = user;
-      this.saveAccounts(accounts);
+      this.saveMockAccounts(accounts);
     }
-    this.setCurrentUser(user);
+    this.setMockSession(user);
     return user;
   },
 };

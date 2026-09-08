@@ -22,12 +22,57 @@ import { BookingModal } from './components/modals/BookingModal';
 import { AddServiceModal } from './components/modals/AddServiceModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
 
+const VALID_ROUTES: PageRoute[] = [
+  'landing',
+  'marketplace',
+  'dashboard',
+  'bookings',
+  'services',
+  'account',
+  'login',
+  'signup',
+  'join-provider-network',
+  'notifications',
+];
+
+const getRouteFromUrl = (): PageRoute => {
+  const path = window.location.pathname.replace(/^\//, '') as PageRoute;
+  return VALID_ROUTES.includes(path) ? path : 'landing';
+};
+
 export function App() {
-  const [currentRoute, setCurrentRoute] = useState<PageRoute>('landing');
+  const [currentRoute, setCurrentRouteState] = useState<PageRoute>(getRouteFromUrl);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Synchronize route state with browser history
+  const setCurrentRoute = (route: PageRoute) => {
+    if (route !== currentRoute) {
+      const url = route === 'landing' ? '/' : `/${route}`;
+      window.history.pushState({ route }, '', url);
+      setCurrentRouteState(route);
+    }
+  };
+
+  // Listen to browser Back/Forward navigation
+  useEffect(() => {
+    const initialRoute = getRouteFromUrl();
+    window.history.replaceState(
+      { route: initialRoute },
+      '',
+      initialRoute === 'landing' ? '/' : `/${initialRoute}`
+    );
+
+    const handlePopState = (event: PopStateEvent) => {
+      const targetRoute = (event.state?.route as PageRoute) || getRouteFromUrl();
+      setCurrentRouteState(targetRoute);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // User session loaded from authService / storage
-  const [user, setUser] = useState<User | null>(() => authService.getCurrentUser());
+  const [user, setUser] = useState<User | null>(() => authService.getMockSession());
   const [services, setServices] = useState<Service[]>(() => storage.getServices());
   const [bookings, setBookings] = useState<Booking[]>(() => storage.getBookings());
   const [providers] = useState(INITIAL_PROVIDERS);
@@ -47,6 +92,34 @@ export function App() {
     }, 4000);
   };
 
+  // Sync Supabase Auth session & onAuthStateChange listener
+  useEffect(() => {
+    let isMounted = true;
+
+    // Purge any legacy storage keys from previous builds
+    localStorage.removeItem('eventlogix_current_session');
+    localStorage.removeItem('eventlogix_registered_accounts');
+    localStorage.removeItem('eventlogix_services');
+    localStorage.removeItem('eventlogix_bookings');
+
+    authService.getCurrentUser().then((currentUser) => {
+      if (isMounted) {
+        setUser(currentUser);
+      }
+    });
+
+    const { unsubscribe } = authService.onAuthStateChange((newUser) => {
+      if (isMounted) {
+        setUser(newUser);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
   // Sync services and bookings to LocalStorage
   useEffect(() => {
     storage.saveServices(services);
@@ -63,34 +136,34 @@ export function App() {
     // If user was attempting to book a service, keeping serviceToBook will open the booking dialog
   };
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    await authService.logout();
     setUser(null);
     setServiceToBook(null);
     showToast('Signed out successfully.');
     setCurrentRoute('landing');
   };
 
-  const handleUpdateUser = (updatedUser: User) => {
-    const saved = authService.updateUser(updatedUser);
+  const handleUpdateUser = async (updatedUser: User) => {
+    const saved = await authService.updateUser(updatedUser);
     setUser(saved);
     showToast('Profile settings updated.');
   };
 
-  const handleToggleRole = () => {
+  const handleToggleRole = async () => {
     if (!user) {
       setCurrentRoute('login');
       return;
     }
-    if (user.role === 'client') {
-      setCurrentRoute('apply-provider');
+    if (user.role === 'consumer') {
+      setCurrentRoute('join-provider-network');
       return;
     }
-    const newRole: UserRole = user.role === 'provider' ? 'client' : 'provider';
+    const newRole: UserRole = user.role === 'provider' ? 'consumer' : 'provider';
     const updated: User = { ...user, role: newRole };
-    authService.updateUser(updated);
-    setUser(updated);
-    showToast(`Switched view to ${newRole === 'provider' ? 'Provider Dashboard' : 'Client Marketplace'}.`);
+    const saved = await authService.updateUser(updated);
+    setUser(saved);
+    showToast(`Switched view to ${newRole === 'provider' ? 'Provider Dashboard' : 'Home'}.`);
     if (newRole === 'provider') {
       setCurrentRoute('dashboard');
     } else {
@@ -103,7 +176,8 @@ export function App() {
     if (initialService) {
       setServices((prev) => [initialService, ...prev]);
     }
-    showToast(`Congratulations, ${updatedUser.companyName}! Your provider account is now active.`);
+    const displayName = updatedUser.providerDetails?.businessName || updatedUser.companyName || updatedUser.name;
+    showToast(`Congratulations, ${displayName}! Your provider account is now active.`);
     setCurrentRoute('dashboard');
   };
 
@@ -189,7 +263,7 @@ export function App() {
             You are currently signed in as an Event Planner. To manage a catalog and receive bookings, submit a Provider Application.
           </p>
           <button
-            onClick={() => setCurrentRoute('apply-provider')}
+            onClick={() => setCurrentRoute('join-provider-network')}
             className="px-6 py-3 bg-primary text-on-primary rounded-xl text-xs font-bold shadow-sm hover:bg-primary-container"
           >
             Apply to Become a Provider
@@ -268,7 +342,7 @@ export function App() {
             activities={activities}
           />
         );
-      case 'apply-provider':
+      case 'join-provider-network':
         return (
           <ProviderApplicationPage
             user={user}
@@ -283,6 +357,7 @@ export function App() {
             setCurrentRoute={setCurrentRoute}
             onUpdateUser={handleUpdateUser}
             onLogout={handleLogout}
+            bookingsCount={bookings.length}
           />
         );
       case 'login':
