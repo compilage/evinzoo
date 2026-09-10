@@ -273,7 +273,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            setCurrentRoute('join-provider-network');
+                            setCurrentRoute('provider-onboarding');
                             setMenuOpen(false);
                           }}
                           className="w-full text-left px-4 py-2 text-xs font-bold text-primary hover:bg-surface flex items-center gap-2.5 text-primary"

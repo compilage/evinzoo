@@ -94,3 +94,34 @@
 .animate-modal-pop {
   animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Directional Step Transitions for Onboarding Screens */
+@keyframes stepSlideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes stepSlideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-slide-right {
+  animation: stepSlideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.step-slide-left {
+  animation: stepSlideInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

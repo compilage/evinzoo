@@ -60,3 +60,4 @@ coverage/
 *.bak
 scratch/
 *_plan.md
+*_setup.md

@@ -7,8 +7,46 @@ const STORAGE_KEY_SESSION = 'evinzoo_current_session';
 // Real authentication mode: no pre-seeded dummy users
 const INITIAL_ACCOUNTS: User[] = [];
 
-export function mapProfileToUser(profile: any, fallbackEmail?: string, providerDetails?: any): User {
-  const role: UserRole = profile.role === 'provider' ? 'provider' : 'consumer';
+/**
+ * Extracts and verifies the authoritative `user_role` claim directly from the signed JWT access token.
+ * Populated by the trusted database custom_access_token_hook.
+ */
+export function extractUserRoleFromJwt(session: any): UserRole {
+  try {
+    if (session?.access_token) {
+      const payloadBase64 = session.access_token.split('.')[1];
+      if (payloadBase64) {
+        // Handle URL-safe base64 decoding
+        const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const claims = JSON.parse(jsonPayload);
+        if (claims.user_role === 'provider' || claims.user_role === 'consumer' || claims.user_role === 'employee') {
+          return claims.user_role;
+        }
+        if (claims.app_metadata?.user_role === 'provider' || claims.app_metadata?.user_role === 'consumer' || claims.app_metadata?.user_role === 'employee') {
+          return claims.app_metadata.user_role;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Evinzoo Auth] Could not decode user_role claim from access token:', err);
+  }
+  return 'consumer';
+}
+
+export function mapProfileToUser(
+  profile: any,
+  fallbackEmail?: string,
+  providerDetails?: any,
+  roleOverride?: UserRole
+): User {
+  // Authoritative role: roleOverride (from signed JWT) > fallback
+  const role: UserRole = roleOverride || (profile.user_role as UserRole) || (profile.role as UserRole) || 'consumer';
   return {
     id: profile.id,
     userId: profile.user_id,
@@ -20,7 +58,13 @@ export function mapProfileToUser(profile: any, fallbackEmail?: string, providerD
       profile.avatar_url ||
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAZeCZZrDuM6Q8dGXTQoyXl6ezp52QPZDj0huU7FSxcccZCVAdCuAuRxjZODTZA64KdSccoTP_s1FXSiwijuKrF_gdeztARd1gY_N5PDE0C43N33HNeb-lgirya2mKSI41r9Pt1_HDcCnAU4s2l4AmoBESoeW2bs2b589_KUcQphQzPI0bRSBHohTtBJmvj3e0DWnyv7meijP8eqLtokF5ElUqmWDlYlSaPDiuVXNJB_uEH6TSN2_U',
     companyName: providerDetails?.business_name || profile.company_name || undefined,
-    providerId: profile.provider_id || (role === 'provider' ? `PRV-${profile.id.slice(0, 6).toUpperCase()}` : undefined),
+    providerId:
+      profile.provider_id ||
+      (role === 'provider'
+        ? profile.user_id
+          ? profile.user_id.replace('USR-', 'PRV-')
+          : `PRV-${profile.id.slice(0, 6).toUpperCase()}`
+        : undefined),
     isLive: providerDetails ? Boolean(providerDetails.is_available) : Boolean(profile.is_live),
     providerDetails: providerDetails
       ? {
@@ -90,6 +134,40 @@ export const authService = {
     }
   },
 
+  /**
+   * Fast reverification of the authoritative user_role directly from the signed JWT access token.
+   * Leverages Supabase's local cached session (no network overhead if session is valid).
+   */
+  async getVerifiedUserRole(): Promise<UserRole | null> {
+    if (!isSupabaseConfigured) {
+      const mock = this.getMockSession();
+      return mock ? mock.role : null;
+    }
+
+    try {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error || !session?.user) {
+        return null;
+      }
+
+      return extractUserRoleFromJwt(session);
+    } catch (err) {
+      console.warn('[Evinzoo Auth] Failed to verify JWT user_role:', err);
+      return null;
+    }
+  },
+
+  /**
+   * Refreshes the active user model and re-validates JWT custom claims.
+   */
+  async refreshSessionUser(): Promise<User | null> {
+    return this.getCurrentUser();
+  },
+
   // 1. Initial Session Retrieval
   async getCurrentUser(): Promise<User | null> {
     if (!isSupabaseConfigured) {
@@ -106,6 +184,8 @@ export const authService = {
         return null;
       }
 
+      const userRole = extractUserRoleFromJwt(session);
+
       // Fetch profile from public.profiles
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -119,7 +199,7 @@ export const authService = {
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Evinzoo Member',
           email: session.user.email || '',
-          role: 'consumer',
+          role: userRole,
           isLive: false,
           avatar:
             session.user.user_metadata?.avatar_url ||
@@ -128,7 +208,7 @@ export const authService = {
       }
 
       let providerDetails = null;
-      if (profile.role === 'provider') {
+      if (userRole === 'provider') {
         const { data: details } = await supabase
           .from('provider_details')
           .select('*')
@@ -137,7 +217,7 @@ export const authService = {
         providerDetails = details;
       }
 
-      return mapProfileToUser(profile, session.user.email, providerDetails);
+      return mapProfileToUser(profile, session.user.email, providerDetails, userRole);
     } catch (err) {
       console.error('[Evinzoo Auth] Failed to fetch current user session:', err);
       return null;
@@ -182,7 +262,6 @@ export const authService = {
         data: {
           full_name: name.trim(),
           phone: phone?.trim() || null,
-          role: 'consumer',
         },
       },
     });
@@ -203,7 +282,7 @@ export const authService = {
       .single();
 
     if (profile) {
-      return mapProfileToUser(profile, data.user.email);
+      return mapProfileToUser(profile, data.user.email, null, 'consumer');
     }
 
     return {
@@ -246,6 +325,8 @@ export const authService = {
       throw new Error('Login failed. Please verify your credentials.');
     }
 
+    const userRole = extractUserRoleFromJwt(data.session);
+
     // Fetch user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -258,7 +339,7 @@ export const authService = {
         id: data.user.id,
         name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Evinzoo Member',
         email: data.user.email || normalizedEmail,
-        role: 'consumer',
+        role: userRole,
         isLive: false,
         avatar:
           data.user.user_metadata?.avatar_url ||
@@ -266,7 +347,17 @@ export const authService = {
       };
     }
 
-    return mapProfileToUser(profile, data.user.email);
+    let providerDetails = null;
+    if (userRole === 'provider') {
+      const { data: details } = await supabase
+        .from('provider_details')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+      providerDetails = details;
+    }
+
+    return mapProfileToUser(profile, data.user.email, providerDetails, userRole);
   },
 
   // 4. Real Sign Out
@@ -289,6 +380,8 @@ export const authService = {
         return;
       }
 
+      const userRole = extractUserRoleFromJwt(session);
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -297,7 +390,7 @@ export const authService = {
 
       if (profile) {
         let providerDetails = null;
-        if (profile.role === 'provider') {
+        if (userRole === 'provider') {
           const { data: details } = await supabase
             .from('provider_details')
             .select('*')
@@ -305,13 +398,13 @@ export const authService = {
             .maybeSingle();
           providerDetails = details;
         }
-        callback(mapProfileToUser(profile, session.user.email, providerDetails));
+        callback(mapProfileToUser(profile, session.user.email, providerDetails, userRole));
       } else {
         callback({
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Evinzoo Member',
           email: session.user.email || '',
-          role: 'consumer',
+          role: userRole,
           isLive: false,
           avatar:
             session.user.user_metadata?.avatar_url ||
@@ -338,15 +431,9 @@ export const authService = {
     }
   ): Promise<User> {
     if (isSupabaseConfigured) {
-      // In Phase 1, update profile role to provider and store company details
-      const newProviderId = Math.floor(1000 + Math.random() * 9000).toString();
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .update({
-          role: 'provider',
-          company_name: appData.businessName,
-          provider_id: newProviderId,
-          is_live: true,
           phone: appData.phone,
         })
         .eq('id', userId)
@@ -354,7 +441,7 @@ export const authService = {
         .single();
 
       if (!error && updatedProfile) {
-        return mapProfileToUser(updatedProfile);
+        return mapProfileToUser(updatedProfile, undefined, undefined, 'provider');
       }
     }
 
@@ -400,15 +487,24 @@ export const authService = {
           full_name: user.name,
           phone: user.phone,
           avatar_url: user.avatar,
-          is_live: user.isLive,
-          company_name: user.companyName,
         })
         .eq('id', user.id)
         .select()
         .single();
 
+      if (user.role === 'provider' && (user.companyName !== undefined || user.isLive !== undefined)) {
+        await supabase
+          .from('provider_details')
+          .update({
+            ...(user.companyName !== undefined ? { business_name: user.companyName } : {}),
+            ...(user.isLive !== undefined ? { is_available: user.isLive } : {}),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('profile_id', user.id);
+      }
+
       if (!error && updated) {
-        return mapProfileToUser(updated, user.email);
+        return mapProfileToUser(updated, user.email, user.providerDetails, user.role);
       }
     }
 

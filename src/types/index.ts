@@ -1,3 +1,9 @@
+export type OnboardingSubRoute =
+  | 'user-details'
+  | 'business-details'
+  | 'onboarding-checkout'
+  | 'status';
+
 export type PageRoute =
   | 'landing'
   | 'marketplace'
@@ -7,10 +13,14 @@ export type PageRoute =
   | 'account'
   | 'login'
   | 'signup'
-  | 'join-provider-network'
+  | 'provider-onboarding'
+  | 'provider-onboarding/user-details'
+  | 'provider-onboarding/business-details'
+  | 'provider-onboarding/onboarding-checkout'
+  | 'provider-onboarding/status'
   | 'notifications';
 
-export type UserRole = 'consumer' | 'provider';
+export type UserRole = 'consumer' | 'provider' | 'employee';
 
 export type ProviderApplicationStatus = 'submitted' | 'reviewed' | 'approved' | 'rejected';
 export type KycStatus = 'pending' | 'verified' | 'rejected';
