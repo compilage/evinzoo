@@ -32,7 +32,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <main className="max-w-container-max mx-auto md:px-margin-desktop w-full pb-16">
       {/* Hero Section */}
-      <section className="px-margin-mobile pt-stack-lg pb-16 md:pt-24 md:pb-24 text-center relative overflow-hidden rounded-b-3xl md:rounded-3xl md:mt-stack-md bg-surface-container-lowest border border-outline-variant shadow-sm">
+      <section className="px-margin-mobile pt-16 sm:pt-20 md:pt-24 pb-16 md:pb-24 text-center relative overflow-hidden rounded-b-3xl md:rounded-3xl md:mt-2 bg-surface-container-lowest border border-outline-variant shadow-sm">
         <div
           className="absolute inset-0 z-0 opacity-10 bg-cover bg-center"
           style={{

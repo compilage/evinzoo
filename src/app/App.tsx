@@ -7,7 +7,7 @@ import {
 } from '../data/mockData';
 import { authService } from '../services/authService';
 import { Navbar } from '../components/layout/Navbar';
-import { MobileNav } from '../components/layout/MobileNav';
+import { SmartSidebar } from '../components/layout/SmartSidebar';
 import { Footer } from '../components/layout/Footer';
 import { LandingPage } from '../pages/landing/LandingPage';
 import { MarketplacePage } from '../pages/consumer/MarketplacePage';
@@ -26,6 +26,26 @@ import { getRouteFromUrl, buildRouteUrl } from './routes';
 export function App() {
   const [currentRoute, setCurrentRouteState] = useState<PageRoute>(getRouteFromUrl);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('evinzoo_sidebar_collapsed');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const handleToggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsMobileSidebarOpen((prev) => !prev);
+    } else {
+      setIsDesktopSidebarCollapsed((prev) => {
+        const next = !prev;
+        localStorage.setItem('evinzoo_sidebar_collapsed', String(next));
+        return next;
+      });
+    }
+  };
 
   // Synchronize route state with browser history
   const setCurrentRoute = (route: PageRoute) => {
@@ -387,7 +407,15 @@ export function App() {
   const isAuthPage = currentRoute === 'login' || currentRoute === 'signup';
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface text-on-surface">
+    <div
+      className={`flex flex-col min-h-screen bg-surface text-on-surface transition-all duration-300 ease-in-out ${
+        isAuthPage
+          ? ''
+          : isDesktopSidebarCollapsed
+          ? 'md:pl-[68px]'
+          : 'md:pl-60'
+      }`}
+    >
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-primary text-on-primary text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2 animate-bounce">
@@ -406,11 +434,35 @@ export function App() {
           user={user}
           onLogout={handleLogout}
           onToggleRole={handleToggleRole}
+          onToggleSidebar={handleToggleSidebar}
+          unreadNotificationsCount={activities.length}
         />
       )}
 
-      {/* Page Content with smooth transition */}
-      <div key={currentRoute} className="flex-1 page-transition">
+      {/* Smart Sidebar (Left-anchored: desktop collapsible strip + mobile drawer) */}
+      {!isAuthPage && (
+        <SmartSidebar
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          isDesktopCollapsed={isDesktopSidebarCollapsed}
+          onToggleDesktopCollapse={handleToggleSidebar}
+          currentRoute={currentRoute}
+          setCurrentRoute={setCurrentRoute}
+          user={user}
+          onLogout={handleLogout}
+          onToggleRole={handleToggleRole}
+          unreadNotificationsCount={activities.length}
+          onUpdateUser={handleUpdateUser}
+        />
+      )}
+
+      {/* Page Content with smooth transition & comfortable top breathing room */}
+      <div
+        key={currentRoute}
+        className={`flex-1 page-transition ${
+          isAuthPage ? '' : 'pt-16 sm:pt-16 md:pt-6'
+        }`}
+      >
         {renderPage()}
       </div>
 
@@ -418,14 +470,6 @@ export function App() {
       {!isAuthPage && currentRoute === 'landing' && (
         <Footer setCurrentRoute={setCurrentRoute} />
       )}
-
-      {/* Persistent Bottom Navigation for Logged-In Portals */}
-      <MobileNav
-        currentRoute={currentRoute}
-        setCurrentRoute={setCurrentRoute}
-        user={user}
-        unreadNotificationsCount={activities.length}
-      />
 
       {/* Partner Notifications Modal (Quick Drawer) */}
       <NotificationsModal

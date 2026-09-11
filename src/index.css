@@ -125,3 +125,44 @@
 .step-slide-left {
   animation: stepSlideInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Smart Sidebar Drawer Animations */
+@keyframes sidebarSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-sidebar-slide {
+  animation: sidebarSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-backdrop-fade {
+  animation: backdropFadeIn 0.2s ease-out forwards;
+}
+
+/* Left-anchored sidebar drawer slide-in */
+@keyframes sidebarSlideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-sidebar-slide-left {
+  animation: sidebarSlideInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
